@@ -1,6 +1,7 @@
 // src/LogWorkout.js
 import React, { useState } from 'react';
-import { db, auth } from './firebase';
+import { db, auth } from './firebase'; // Ensure you're importing from your firebase.js file
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const LogWorkout = () => {
   const [exercise, setExercise] = useState('');
@@ -15,7 +16,7 @@ const LogWorkout = () => {
     const user = auth.currentUser;
     if (user) {
       try {
-        await db.collection('workouts').add({
+        await addDoc(collection(db, 'workouts'), {
           exercise,
           weight,
           sets,
@@ -23,7 +24,7 @@ const LogWorkout = () => {
           nutrition,
           quality,
           uid: user.uid,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          timestamp: serverTimestamp()
         });
       } catch (error) {
         console.error(error);
