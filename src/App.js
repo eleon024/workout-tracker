@@ -36,9 +36,11 @@ function App() {
           <Routes>
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
-            <PrivateRoute path="/log-workout" element={<LogWorkout />} />
-            <PrivateRoute path="/recommendations" element={<Recommendations />} />
-            <PrivateRoute path="/manage-profile" element={<ManageProfile />} />
+            <Route element={<PrivateRoute />}>
+              <Route path="/log-workout" element={<LogWorkout />} />
+              <Route path="/recommendations" element={<Recommendations />} />
+              <Route path="/manage-profile" element={<ManageProfile />} />
+            </Route>
             <Route path="/" element={<SignIn />} /> {/* Default to SignIn */}
           </Routes>
         </Container>

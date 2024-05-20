@@ -1,9 +1,20 @@
 // src/LogWorkout.js
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Form, Button, Alert, Badge } from 'react-bootstrap';
 import { db, auth } from './firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { doc, getDoc } from 'firebase/firestore';
+
+const supplementsList = [
+  'Creatine',
+  'BCAAs',
+  'Protein',
+  'Beta-alanine',
+  'Caffeine',
+  'Glutamine',
+  'Pre-Workout',
+  'Post-Workout',
+];
 
 const LogWorkout = () => {
   const [exercise, setExercise] = useState('');
@@ -12,10 +23,22 @@ const LogWorkout = () => {
   const [reps, setReps] = useState('');
   const [nutrition, setNutrition] = useState('');
   const [quality, setQuality] = useState('');
-  const [split, setSplit] = useState('');
+  const [splitDay, setSplitDay] = useState('');
+  const [selectedSupplement, setSelectedSupplement] = useState('');
+  const [dosage, setDosage] = useState('');
   const [supplements, setSupplements] = useState([]);
   const [profile, setProfile] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
+
+  const splitOptions = {
+    'push-pull-legs': ['Push', 'Pull', 'Legs'],
+    'upper-lower': ['Upper', 'Lower'],
+    'full-body': ['Full Body'],
+    'bro-split': ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'],
+    'body-part': ['Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs'],
+    'push-pull': ['Push', 'Pull'],
+    'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs'],
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -26,13 +49,22 @@ const LogWorkout = () => {
         if (profileSnap.exists()) {
           const data = profileSnap.data();
           setProfile(data);
-          setSplit(data.split);
-          setSupplements(data.supplements ? data.supplements.split(',') : []);
+        } else {
+          setProfile({ split: '' });
         }
       }
     };
     fetchProfile();
   }, []);
+
+  const handleAddSupplement = () => {
+    if (selectedSupplement && dosage) {
+      const newSupplement = `${selectedSupplement} - ${dosage}`;
+      setSupplements([...supplements, newSupplement]);
+      setSelectedSupplement('');
+      setDosage('');
+    }
+  };
 
   const handleLogWorkout = async (e) => {
     e.preventDefault();
@@ -46,7 +78,8 @@ const LogWorkout = () => {
           reps,
           nutrition,
           quality,
-          split,
+          split: profile.split,
+          splitDay,
           supplements,
           uid: user.uid,
           timestamp: serverTimestamp()
@@ -57,6 +90,8 @@ const LogWorkout = () => {
         setReps('');
         setNutrition('');
         setQuality('');
+        setSplitDay('');
+        setSupplements([]);
         setErrorMessage('');
       } catch (error) {
         console.error(error);
@@ -69,21 +104,17 @@ const LogWorkout = () => {
     <>
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       <Form onSubmit={handleLogWorkout}>
-        <Form.Group controlId="formSplit">
-          <Form.Label>Workout Split</Form.Label>
+        <Form.Group controlId="formSplitDay">
+          <Form.Label>Workout Split Day</Form.Label>
           <Form.Control
             as="select"
-            value={split}
-            onChange={(e) => setSplit(e.target.value)}
+            value={splitDay}
+            onChange={(e) => setSplitDay(e.target.value)}
           >
-            <option value="">Select Split</option>
-            <option value="push">Push</option>
-            <option value="pull">Pull</option>
-            <option value="legs">Legs</option>
-            <option value="back-bis">Back & Bis</option>
-            <option value="chest-tris">Chest & Tris</option>
-            <option value="upper">Upper</option>
-            <option value="lower">Lower</option>
+            <option value="">Select Split Day</option>
+            {profile.split && splitOptions[profile.split]?.map((option, index) => (
+              <option key={index} value={option}>{option}</option>
+            ))}
           </Form.Control>
         </Form.Group>
         <Form.Group controlId="formExercise">
@@ -131,19 +162,6 @@ const LogWorkout = () => {
             onChange={(e) => setNutrition(e.target.value)}
           />
         </Form.Group>
-        <Form.Group controlId="formSupplements">
-          <Form.Label>Supplements</Form.Label>
-          <Form.Control
-            as="select"
-            multiple
-            value={supplements}
-            onChange={(e) => setSupplements(Array.from(e.target.selectedOptions, option => option.value))}
-          >
-            {profile.supplements ? profile.supplements.split(',').map((supplement, index) => (
-              <option key={index} value={supplement}>{supplement}</option>
-            )) : <option value="">No supplements found</option>}
-          </Form.Control>
-        </Form.Group>
         <Form.Group controlId="formQuality">
           <Form.Label>Quality</Form.Label>
           <Form.Control
@@ -157,7 +175,38 @@ const LogWorkout = () => {
             <option value="great">Great</option>
           </Form.Control>
         </Form.Group>
-        <Button variant="primary" type="submit">
+        <Form.Group controlId="formSupplements">
+          <Form.Label>Supplements</Form.Label>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Form.Control
+              as="select"
+              value={selectedSupplement}
+              onChange={(e) => setSelectedSupplement(e.target.value)}
+              style={{ marginRight: '10px' }}
+            >
+              <option value="">Select Supplement</option>
+              {supplementsList.map((supplement, index) => (
+                <option key={index} value={supplement}>{supplement}</option>
+              ))}
+            </Form.Control>
+            <Form.Control
+              type="number"
+              placeholder="Dosage"
+              value={dosage}
+              onChange={(e) => setDosage(e.target.value)}
+              style={{ width: '100px', marginRight: '10px' }}
+            />
+            <Button onClick={handleAddSupplement}>Add</Button>
+          </div>
+        </Form.Group>
+        <div>
+          {supplements.map((supplement, index) => (
+            <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
+              {supplement}
+            </Badge>
+          ))}
+        </div>
+        <Button variant="primary" type="submit" style={{ marginTop: '20px' }}>
           Log Workout
         </Button>
       </Form>
