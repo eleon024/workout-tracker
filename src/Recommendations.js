@@ -1,5 +1,7 @@
+// src/Recommendations.js
 import React, { useState, useEffect } from 'react';
 import { fetchWorkoutData, analyzeData } from './dataAnalysis';
+import { ListGroup } from 'react-bootstrap';
 
 const Recommendations = () => {
   const [recommendations, setRecommendations] = useState({
@@ -22,11 +24,11 @@ const Recommendations = () => {
       <h2>Recommendations</h2>
       <p>{recommendations.bestTime}</p>
       <p>{recommendations.bestNutrition}</p>
-      <ul>
+      <ListGroup>
         {recommendations.insights.map((insight, index) => (
-          <li key={index}>{insight}</li>
+          <ListGroup.Item key={index}>{insight}</ListGroup.Item>
         ))}
-      </ul>
+      </ListGroup>
     </div>
   );
 };

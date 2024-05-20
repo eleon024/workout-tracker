@@ -1,5 +1,6 @@
 // src/SignIn.js
 import React, { useState } from 'react';
+import { Form, Button } from 'react-bootstrap';
 import { auth } from './firebase';
 
 const SignIn = () => {
@@ -16,24 +17,29 @@ const SignIn = () => {
   };
 
   return (
-    <div>
-      <h2>Sign In</h2>
-      <form onSubmit={handleSignIn}>
-        <input
+    <Form onSubmit={handleSignIn}>
+      <Form.Group controlId="formBasicEmail">
+        <Form.Label>Email address</Form.Label>
+        <Form.Control
           type="email"
+          placeholder="Enter email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
         />
-        <input
+      </Form.Group>
+      <Form.Group controlId="formBasicPassword">
+        <Form.Label>Password</Form.Label>
+        <Form.Control
           type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
         />
-        <button type="submit">Sign In</button>
-      </form>
-    </div>
+      </Form.Group>
+      <Button variant="primary" type="submit">
+        Sign In
+      </Button>
+    </Form>
   );
 };
 
