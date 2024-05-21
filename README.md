@@ -13,6 +13,7 @@ Welcome to the Workout Logger App! This app allows you to log and analyze your w
 - **Nutrition Logging**: Log what you ate during your workout.
 - **Workout Quality Tracking**: Rate the quality of your workout.
 - **Workout History**: View your past workouts in a clean, card-based interface.
+- **Weight, BMI, and Body Fat Tracking**: Track your weight, BMI, and body fat over time with visual charts on the homepage.
 
 ## How It Works
 
@@ -35,11 +36,17 @@ Welcome to the Workout Logger App! This app allows you to log and analyze your w
 ### Viewing Past Workouts
 
 - **Dashboard**: View your workout history in a card-based layout, with each card displaying the date of the workout.
+![Dashboard](Dashboard.png)
 - **Detailed View**: Click on a workout card to see detailed information about the exercises performed, supplements taken, nutrition logged, and workout quality.
 
 ### Deleting Workouts
 
 - **Delete Option**: Each workout card includes a trash icon. Click the icon to delete the workout after confirming your choice in a dialog.
+
+### Tracking Metrics Over Time
+
+- **Weight, BMI, and Body Fat Charts**: View visual charts that display your weight, BMI, and body fat metrics over time on the homepage. This feature helps you track your progress and stay motivated.
+![BMI, Weight, and Body Fat Charts](<Charts over time.png>)
 
 ## Future Enhancements
 
