@@ -33,7 +33,7 @@ function App() {
               {currentUser && (
                 <>
                   <Nav.Link as={Link} to="/log-workout">Log Workout</Nav.Link>
-                  <Nav.Link as={Link} to="/recommendations">Recommendations</Nav.Link>
+                  {/* <Nav.Link as={Link} to="/recommendations">Recommendations</Nav.Link>*/}
                   <Nav.Link as={Link} to="/manage-profile">Manage Profile</Nav.Link>
                   <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 </>
