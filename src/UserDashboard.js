@@ -1,83 +1,87 @@
-// src/UserDashboard.js
 import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
-import { collection, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { Button, Alert, Card, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Modal } from 'react-bootstrap';
-import { FaTrashAlt } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
   const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchWorkouts = async () => {
       const user = auth.currentUser;
       if (user) {
-        const q = query(
-          collection(db, 'workouts'),
-          where('uid', '==', user.uid),
-          orderBy('timestamp', 'desc') // Order by timestamp descending
-        );
+        const workoutsRef = collection(db, 'workouts');
+        const q = query(workoutsRef, where('uid', '==', user.uid), orderBy('timestamp', 'desc'));
         const querySnapshot = await getDocs(q);
-        const workoutsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setWorkouts(workoutsData);
+        const workoutData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setWorkouts(workoutData);
+        setLoading(false);
       }
     };
     fetchWorkouts();
   }, []);
 
-  const handleTileClick = (id) => {
-    navigate(`/workout/${id}`);
-  };
-
-  const handleDeleteClick = (workout) => {
-    setWorkoutToDelete(workout);
-    setShowModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
+  const handleDelete = async () => {
     if (workoutToDelete) {
-      await deleteDoc(doc(db, 'workouts', workoutToDelete.id));
-      setWorkouts(workouts.filter(workout => workout.id !== workoutToDelete.id));
+      await deleteDoc(doc(db, 'workouts', workoutToDelete));
+      setWorkouts(workouts.filter(workout => workout.id !== workoutToDelete));
       setShowModal(false);
-      setWorkoutToDelete(null);
     }
   };
 
+  const confirmDelete = (workoutId) => {
+    setWorkoutToDelete(workoutId);
+    setShowModal(true);
+  };
+
   return (
-    <div className="dashboard">
-      {workouts.map(workout => (
-        <Card key={workout.id} style={{ margin: '10px' }}>
-          <Card.Body style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div onClick={() => handleTileClick(workout.id)} style={{ cursor: 'pointer' }}>
-              <Card.Title>{new Date(workout.timestamp.seconds * 1000).toLocaleDateString()}</Card.Title>
-            </div>
-            <FaTrashAlt
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleDeleteClick(workout)}
-            />
-          </Card.Body>
-        </Card>
-      ))}
+    <div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : workouts.length === 0 ? (
+        <Alert variant="info">
+          No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button> Past workouts will be displayed here.
+        </Alert>
+      ) : (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {workouts.map((workout, index) => (
+            <Col key={index}>
+              <Card style={{ position: 'relative' }}>
+                <Card.Body onClick={() => navigate(`/workout/${workout.id}`)} style={{ cursor: 'pointer' }}>
+                  <Card.Title>Workout on {new Date(workout.timestamp.seconds * 1000).toLocaleDateString()}</Card.Title>
+                </Card.Body>
+                <FaTrash
+                  onClick={() => confirmDelete(workout.id)}
+                  style={{
+                    color: 'red',
+                    cursor: 'pointer',
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px'
+                  }}
+                />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete this workout?
-        </Modal.Body>
+        <Modal.Body>Are you sure you want to delete this workout?</Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDeleteConfirm}>
+          <Button variant="danger" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

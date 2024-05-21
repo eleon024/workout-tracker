@@ -20,7 +20,7 @@ const LogWorkout = () => {
   const [customExercise, setCustomExercise] = useState('');
   const [weight, setWeight] = useState('');
   const [sets, setSets] = useState('');
-  const [reps, setReps] = useState('');
+  const [reps, setReps] = useState(['']);
   const [nutrition, setNutrition] = useState('');
   const [quality, setQuality] = useState('');
   const [splitDay, setSplitDay] = useState('');
@@ -31,18 +31,21 @@ const LogWorkout = () => {
   const [supplements, setSupplements] = useState([]);
   const [profile, setProfile] = useState({});
   const [customSupplements, setCustomSupplements] = useState([]);
-  const [customExercises, setCustomExercises] = useState([]);
+  const [customExercises, setCustomExercises] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [exercises, setExercises] = useState([]); // State to track multiple exercises in a workout
+  const [duration, setDuration] = useState('');
+  const [distance, setDistance] = useState('');
 
   const splitOptions = {
-    'push-pull-legs': ['Push', 'Pull', 'Legs'],
-    'upper-lower': ['Upper', 'Lower'],
-    'full-body': ['Full Body'],
-    'bro-split': ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'],
-    'body-part': ['Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs'],
-    'push-pull': ['Push', 'Pull'],
-    'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs'],
+    'push-pull-legs': ['Push', 'Pull', 'Legs', 'Cardio'],
+    'upper-lower': ['Upper', 'Lower', 'Cardio'],
+    'full-body': ['Full Body', 'Cardio'],
+    'bro-split': ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Cardio'],
+    'body-part': ['Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio'],
+    'push-pull': ['Push', 'Pull', 'Cardio'],
+    'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio'],
   };
 
   useEffect(() => {
@@ -55,7 +58,7 @@ const LogWorkout = () => {
           const data = profileSnap.data();
           setProfile(data);
           setCustomSupplements(data.customSupplements || []);
-          setCustomExercises(data.customExercises || []);
+          setCustomExercises(data.customExercises || {});
         } else {
           setProfile({ split: '' });
         }
@@ -90,17 +93,34 @@ const LogWorkout = () => {
     }
   };
 
+  const handleAddExercise = () => {
+    const exerciseToSave = customExercise ? customExercise : exercise;
+    const newExercise = {
+      exercise: exerciseToSave,
+      weight,
+      sets,
+      reps,
+      duration,
+      distance,
+    };
+    setExercises([...exercises, newExercise]);
+    // Clear form fields after adding exercise
+    setExercise('');
+    setCustomExercise('');
+    setWeight('');
+    setSets('');
+    setReps(['']);
+    setDuration('');
+    setDistance('');
+  };
+
   const handleLogWorkout = async (e) => {
     e.preventDefault();
     const user = auth.currentUser;
     if (user) {
       try {
-        const exerciseToSave = customExercise ? customExercise : exercise;
         await addDoc(collection(db, 'workouts'), {
-          exercise: exerciseToSave,
-          weight,
-          sets,
-          reps,
+          exercises,
           nutrition,
           quality,
           split: profile.split,
@@ -114,23 +134,37 @@ const LogWorkout = () => {
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000); // Redirect after 2 seconds
-        // Save custom exercise to the user's profile
-        if (customExercise && !customExercises.includes(customExercise)) {
-          const profileRef = doc(db, 'profiles', user.uid);
-          await updateDoc(profileRef, {
-            customExercises: [...customExercises, customExercise]
-          });
-          setCustomExercises([...customExercises, customExercise]);
-        }
+
+        // Update custom exercises in the profile
+        const newCustomExercises = exercises.reduce((acc, ex) => {
+          if (!acc[splitDay]) {
+            acc[splitDay] = [];
+          }
+          if (!acc[splitDay].includes(ex.exercise)) {
+            acc[splitDay].push(ex.exercise);
+          }
+          return acc;
+        }, { ...customExercises });
+
+        const profileRef = doc(db, 'profiles', user.uid);
+        await updateDoc(profileRef, {
+          customExercises: newCustomExercises
+        });
+        setCustomExercises(newCustomExercises);
+
+        // Clear form fields after logging workout
         setExercise('');
         setCustomExercise('');
         setWeight('');
         setSets('');
-        setReps('');
+        setReps(['']);
         setNutrition('');
         setQuality('');
         setSplitDay('');
         setSupplements([]);
+        setExercises([]);
+        setDuration('');
+        setDistance('');
       } catch (error) {
         console.error(error);
         setErrorMessage(error.message);
@@ -140,19 +174,57 @@ const LogWorkout = () => {
   };
 
   const allSupplements = [...predefinedSupplements, ...customSupplements];
-  const allExercises = [...customExercises];
+  const filteredExercises = customExercises[splitDay] || [];
+
+  const handleSetsChange = (e) => {
+    const value = e.target.value;
+    setSets(value);
+    const newReps = Array.from({ length: value }, () => '');
+    setReps(newReps);
+  };
+
+  const handleRepsChange = (index, value) => {
+    const newReps = [...reps];
+    newReps[index] = value;
+    setReps(newReps);
+  };
+
+  const handleRemoveExercise = (index) => {
+    const newExercises = exercises.filter((_, i) => i !== index);
+    setExercises(newExercises);
+  };
+
+  const handleSplitDayChange = (e) => {
+    const value = e.target.value;
+    setSplitDay(value);
+    if (value === 'Cardio') {
+      setWeight('');
+      setSets(1);
+      setReps(['']);
+      setDuration('');
+      setDistance('');
+    }
+  };
+
+  const validateCardio = () => {
+    if (splitDay === 'Cardio' && !duration && !distance) {
+      setErrorMessage('Please enter either duration or distance for cardio.');
+      return false;
+    }
+    return true;
+  };
 
   return (
     <>
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
-      <Form onSubmit={handleLogWorkout}>
+      <Form onSubmit={(e) => { if (validateCardio()) handleLogWorkout(e); }}>
         <Form.Group controlId="formSplitDay">
           <Form.Label>Workout Split Day</Form.Label>
           <Form.Control
             as="select"
             value={splitDay}
-            onChange={(e) => setSplitDay(e.target.value)}
+            onChange={handleSplitDayChange}
             required
           >
             <option value="">Select Split Day</option>
@@ -167,10 +239,10 @@ const LogWorkout = () => {
             as="select"
             value={exercise}
             onChange={(e) => setExercise(e.target.value)}
-            required={!customExercise} // Required if no custom exercise
+         
           >
             <option value="">Select Exercise</option>
-            {allExercises.map((exercise, index) => (
+            {filteredExercises.map((exercise, index) => (
               <option key={index} value={exercise}>{exercise}</option>
             ))}
           </Form.Control>
@@ -179,40 +251,89 @@ const LogWorkout = () => {
             placeholder="Or enter a new exercise"
             value={customExercise}
             onChange={(e) => setCustomExercise(e.target.value)}
-            required={!exercise} // Required if no selected exercise
+           
           />
         </Form.Group>
-        <Form.Group controlId="formWeight">
-          <Form.Label>Weight</Form.Label>
-          <Form.Control
-            type="number"
-            placeholder="Enter weight"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Form.Group controlId="formSets">
-          <Form.Label>Sets</Form.Label>
-          <Form.Control
-            type="number"
-            placeholder="Enter sets"
-            value={sets}
-            onChange={(e) => setSets(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Form.Group controlId="formReps">
-          <Form.Label>Reps</Form.Label>
-          <Form.Control
-            type="number"
-            placeholder="Enter reps"
-            value={reps}
-            onChange={(e) => setReps(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Form.Group controlId="formNutrition">
+
+        {splitDay === 'Cardio' ? (
+          <>
+            <Form.Group controlId="formDuration">
+              <Form.Label>Duration (minutes)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter duration"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group controlId="formDistance">
+              <Form.Label>Distance (miles)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter distance"
+                value={distance}
+                onChange={(e) => setDistance(e.target.value)}
+              />
+            </Form.Group>
+          </>
+        ) : (
+          <>
+            <Form.Group controlId="formWeight">
+              <Form.Label>Weight (lbs)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter weight"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+         
+              />
+            </Form.Group>
+            <Form.Group controlId="formSets">
+              <Form.Label>Sets</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter sets"
+                value={sets}
+                onChange={handleSetsChange}
+         
+              />
+            </Form.Group>
+            {reps.map((rep, index) => (
+              <Form.Group key={index} controlId={`formReps${index}`}>
+                <Form.Label>Reps for Set {index + 1}</Form.Label>
+                <Form.Control
+                  type="number"
+                  placeholder={`Reps for Set ${index + 1}`}
+                  value={rep}
+                  onChange={(e) => handleRepsChange(index, e.target.value)}
+            
+                />
+              </Form.Group>
+            ))}
+          </>
+        )}
+
+        <Button onClick={handleAddExercise} style={{ marginTop: '20px' }}>
+          Add Exercise
+        </Button>
+        <div>
+          {exercises.map((ex, index) => (
+            <div key={index}>
+              <Badge
+                pill
+                bg="info"
+                style={{ marginRight: '5px', marginTop: '10px', cursor: 'pointer' }}
+                onClick={() => handleRemoveExercise(index)}
+              >
+                {splitDay === 'Cardio' ? 
+                  `${ex.exercise} - ${ex.duration ? `${ex.duration} minutes` : ''} ${ex.distance ? `${ex.distance} miles` : ''}` :
+                  `${ex.exercise} - ${ex.weight} lbs - ${ex.sets} sets - ${ex.reps.join(', ')} reps`
+                }
+              </Badge>
+            </div>
+          ))}
+        </div>
+        <Form.Group controlId="formNutrition" style={{ marginTop: '20px' }}>
           <Form.Label>Nutrition</Form.Label>
           <Form.Control
             type="text"
@@ -230,9 +351,9 @@ const LogWorkout = () => {
             required
           >
             <option value="">Select Quality</option>
-            <option value="poor">Poor</option>
-            <option value="normal">Normal</option>
-            <option value="great">Great</option>
+            <option value="Poor">Poor</option>
+            <option value="Normal">Normal</option>
+            <option value="Great">Great</option>
           </Form.Control>
         </Form.Group>
         <Form.Group controlId="formSupplements">
