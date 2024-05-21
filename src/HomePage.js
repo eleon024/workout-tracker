@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaTrash } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
+import 'chartjs-adapter-date-fns'; // Import the date adapter
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const HomePage = () => {
   const [showModal, setShowModal] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
   const [confirmModal, setConfirmModal] = useState(false);
+  const [error, setError] = useState(null);
 
   const splitOptions = {
     'push-pull-legs': ['Push', 'Pull', 'Legs'],
@@ -32,78 +34,56 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const profileRef = doc(db, 'profiles', user.uid);
-        const profileSnap = await getDoc(profileRef);
-        if (profileSnap.exists()) {
-          const data = profileSnap.data();
-          setProfile(data);
-        }
-      }
-    };
+    const fetchData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          // Fetch profile, last workout, workouts, and metrics in parallel
+          const [profileSnap, lastWorkoutSnap, workoutsSnap, metricsSnap] = await Promise.all([
+            getDoc(doc(db, 'profiles', user.uid)),
+            getDocs(query(collection(db, 'workouts'), where('uid', '==', user.uid), orderBy('timestamp', 'desc'), limit(1))),
+            getDocs(query(collection(db, 'workouts'), where('uid', '==', user.uid), orderBy('timestamp', 'desc'))),
+            getDocs(query(collection(db, 'profiles', user.uid, 'metrics'), orderBy('timestamp', 'asc')))
+          ]);
 
-    const fetchLastWorkout = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const workoutsRef = collection(db, 'workouts');
-        const q = query(workoutsRef, where('uid', '==', user.uid), orderBy('timestamp', 'desc'), limit(1));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          const workoutData = querySnapshot.docs[0].data();
-          setLastWorkout(workoutData);
-          setSplitDayExercises(workoutData.exercises || []);
-          determineNextSplitDay(workoutData.splitDay);
-        }
-      }
-    };
-
-    const fetchWorkouts = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const workoutsRef = collection(db, 'workouts');
-        const q = query(workoutsRef, where('uid', '==', user.uid), orderBy('timestamp', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const workoutData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setWorkouts(workoutData);
-        setLoading(false);
-
-        if (nextSplitDay) {
-          const nextSplitWorkout = workoutData.find(workout => workout.splitDay === nextSplitDay);
-          if (nextSplitWorkout) {
-            setLastNextSplitWorkout(nextSplitWorkout);
+          // Set profile data
+          if (profileSnap.exists()) {
+            setProfile(profileSnap.data());
           }
+
+          // Set last workout data
+          if (!lastWorkoutSnap.empty) {
+            const workoutData = lastWorkoutSnap.docs[0].data();
+            setLastWorkout(workoutData);
+            setSplitDayExercises(workoutData.exercises || []);
+            determineNextSplitDay(workoutData.splitDay);
+          }
+
+          // Set workouts data
+          const workoutData = workoutsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setWorkouts(workoutData);
+
+          // Set last next split workout data
+          if (nextSplitDay) {
+            const nextSplitWorkout = workoutData.find(workout => workout.splitDay === nextSplitDay);
+            if (nextSplitWorkout) {
+              setLastNextSplitWorkout(nextSplitWorkout);
+            }
+          }
+
+          // Set metrics data
+          const metricsData = metricsSnap.docs.map(doc => doc.data());
+          setMetrics(metricsData);
+
+          setLoading(false);
         }
+      } catch (error) {
+        setError(error.message);
       }
     };
 
-    const fetchMetrics = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const metricsRef = collection(db, 'profiles', user.uid, 'metrics');
-        const q = query(metricsRef, orderBy('timestamp', 'asc'));
-        const querySnapshot = await getDocs(q);
-        const metricsData = querySnapshot.docs.map(doc => doc.data());
-        setMetrics(metricsData);
-        setLoading(false);
-      }
-    };
-
-    const determineNextSplitDay = (lastSplitDay) => {
-      if (profile.split && splitOptions[profile.split]) {
-        const splitDays = splitOptions[profile.split].filter(day => day !== 'Cardio');
-        const currentIndex = splitDays.indexOf(lastSplitDay);
-        const nextIndex = (currentIndex + 1) % splitDays.length;
-        setNextSplitDay(splitDays[nextIndex]);
-      }
-    };
-
-    fetchProfile();
-    fetchLastWorkout();
-    fetchWorkouts();
-    fetchMetrics();
-  }, [profile.split, splitOptions, nextSplitDay]);
+    fetchData();
+  }, [profile.split, nextSplitDay]);
 
   const handleDelete = async () => {
     if (workoutToDelete) {
@@ -143,6 +123,15 @@ const HomePage = () => {
     }
   };
 
+  const determineNextSplitDay = (lastSplitDay) => {
+    if (profile.split && splitOptions[profile.split]) {
+      const splitDays = splitOptions[profile.split].filter(day => day !== 'Cardio');
+      const currentIndex = splitDays.indexOf(lastSplitDay);
+      const nextIndex = (currentIndex + 1) % splitDays.length;
+      setNextSplitDay(splitDays[nextIndex]);
+    }
+  };
+
   const sortedWorkouts = () => {
     const sorted = workouts.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
     return sorted;
@@ -162,19 +151,8 @@ const HomePage = () => {
     };
   };
 
-  
   const chartOptions = {
     animation: false,
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-        },
-      },
-    },
   };
 
   return (
@@ -189,7 +167,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>Weight Over Time</Card.Title>
-                  <Line data={generateChartData('Weight', 'weight')}options={chartOptions} />
+                  <Line data={generateChartData('Weight', 'weight')} options={chartOptions} />
                 </Card.Body>
               </Card>
             </Col>
@@ -197,7 +175,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>BMI Over Time</Card.Title>
-                  <Line data={generateChartData('BMI', 'bmi')}options={chartOptions}  />
+                  <Line data={generateChartData('BMI', 'bmi')} options={chartOptions} />
                 </Card.Body>
               </Card>
             </Col>
@@ -205,7 +183,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>Body Fat Over Time</Card.Title>
-                  <Line data={generateChartData('Body Fat', 'bodyFat')}options={chartOptions}  />
+                  <Line data={generateChartData('Body Fat', 'bodyFat')} options={chartOptions} />
                 </Card.Body>
               </Card>
             </Col>
