@@ -162,6 +162,21 @@ const HomePage = () => {
     };
   };
 
+  
+  const chartOptions = {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'day',
+        },
+      },
+    },
+  };
+
   return (
     <div>
       <h1>Welcome back, {profile.firstName || 'User'}!</h1>
@@ -174,7 +189,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>Weight Over Time</Card.Title>
-                  <Line data={generateChartData('Weight', 'weight')} />
+                  <Line data={generateChartData('Weight', 'weight')}options={chartOptions} />
                 </Card.Body>
               </Card>
             </Col>
@@ -182,7 +197,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>BMI Over Time</Card.Title>
-                  <Line data={generateChartData('BMI', 'bmi')} />
+                  <Line data={generateChartData('BMI', 'bmi')}options={chartOptions}  />
                 </Card.Body>
               </Card>
             </Col>
@@ -190,7 +205,7 @@ const HomePage = () => {
               <Card>
                 <Card.Body>
                   <Card.Title>Body Fat Over Time</Card.Title>
-                  <Line data={generateChartData('Body Fat', 'bodyFat')} />
+                  <Line data={generateChartData('Body Fat', 'bodyFat')}options={chartOptions}  />
                 </Card.Body>
               </Card>
             </Col>
