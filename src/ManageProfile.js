@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { db, auth } from './firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const ManageProfile = () => {
   const [firstName, setFirstName] = useState('');
@@ -61,6 +61,17 @@ const ManageProfile = () => {
           bmi,
           bodyFat,
         });
+
+        // Save weight, BMI, and body fat updates to the metrics sub-collection
+        const metricsRef = collection(profileRef, 'metrics');
+        const timestamp = Timestamp.now();
+        await addDoc(metricsRef, {
+          weight,
+          bmi,
+          bodyFat,
+          timestamp
+        });
+
         setSuccessMessage('Profile updated successfully!');
         setErrorMessage('');
       } catch (error) {

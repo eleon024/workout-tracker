@@ -4,6 +4,8 @@ import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, deleteD
 import { Card, Badge, Button, Alert, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash } from 'react-icons/fa';
+import { Line } from 'react-chartjs-2';
+import 'chart.js/auto';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ const HomePage = () => {
   const [nextSplitDay, setNextSplitDay] = useState('');
   const [splitDayExercises, setSplitDayExercises] = useState([]);
   const [workouts, setWorkouts] = useState([]);
+  const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -75,6 +78,18 @@ const HomePage = () => {
       }
     };
 
+    const fetchMetrics = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const metricsRef = collection(db, 'profiles', user.uid, 'metrics');
+        const q = query(metricsRef, orderBy('timestamp', 'asc'));
+        const querySnapshot = await getDocs(q);
+        const metricsData = querySnapshot.docs.map(doc => doc.data());
+        setMetrics(metricsData);
+        setLoading(false);
+      }
+    };
+
     const determineNextSplitDay = (lastSplitDay) => {
       if (profile.split && splitOptions[profile.split]) {
         const splitDays = splitOptions[profile.split].filter(day => day !== 'Cardio');
@@ -87,6 +102,7 @@ const HomePage = () => {
     fetchProfile();
     fetchLastWorkout();
     fetchWorkouts();
+    fetchMetrics();
   }, [profile.split, splitOptions, nextSplitDay]);
 
   const handleDelete = async () => {
@@ -128,29 +144,85 @@ const HomePage = () => {
   };
 
   const sortedWorkouts = () => {
-    // const nextDayWorkouts = workouts.filter(workout => workout.splitDay === nextSplitDay);
-    // const otherWorkouts = workouts.filter(workout => workout.splitDay !== nextSplitDay);
     const sorted = workouts.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
     return sorted;
-    // return [...nextDayWorkouts, ...otherWorkouts];
+  };
+
+  const generateChartData = (label, dataKey) => {
+    return {
+      labels: metrics.map(metric => new Date(metric.timestamp.seconds * 1000).toLocaleDateString()),
+      datasets: [
+        {
+          label,
+          data: metrics.map(metric => metric[dataKey]),
+          borderColor: 'rgba(75,192,192,1)',
+          backgroundColor: 'rgba(75,192,192,0.2)',
+        },
+      ],
+    };
   };
 
   return (
     <div>
       <h1>Welcome back, {profile.firstName || 'User'}!</h1>
-      {lastWorkout && (
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
         <>
-          <h2>Today is likely to be a "{nextSplitDay}" day</h2>
-          <Button onClick={() => setConfirmModal(true)} style={{ marginBottom: '20px', marginRight: '10px' }}>Confirm</Button>
-          <Button onClick={handleDenyRecommendation} style={{ marginBottom: '20px' }}>Deny</Button>
-          {lastNextSplitWorkout && (
-            <>
-              <h3>Last {nextSplitDay} Workout</h3>
+          <Row xs={1} md={2} lg={3} className="g-4" style={{ marginTop: '20px' }}>
+            <Col>
               <Card>
                 <Card.Body>
-                  {lastNextSplitWorkout.exercises.map((exercise, index) => (
+                  <Card.Title>Weight Over Time</Card.Title>
+                  <Line data={generateChartData('Weight', 'weight')} />
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col>
+              <Card>
+                <Card.Body>
+                  <Card.Title>BMI Over Time</Card.Title>
+                  <Line data={generateChartData('BMI', 'bmi')} />
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Body Fat Over Time</Card.Title>
+                  <Line data={generateChartData('Body Fat', 'bodyFat')} />
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+          {lastWorkout && (
+            <>
+              <br></br><h2>Today is likely to be a "{nextSplitDay}" day</h2>
+              <Button onClick={() => setConfirmModal(true)} style={{ marginBottom: '20px', marginRight: '10px' }}>Confirm</Button>
+              <Button onClick={handleDenyRecommendation} style={{ marginBottom: '20px' }}>Deny</Button>
+              {lastNextSplitWorkout && (
+                <>
+                  <br></br><h3>Last {nextSplitDay} Workout</h3>
+                  <Card>
+                    <Card.Body>
+                      {lastNextSplitWorkout.exercises.map((exercise, index) => (
+                        <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
+                          {lastNextSplitWorkout.splitDay === 'Cardio' ? 
+                            `${exercise.exercise} - ${exercise.duration ? `${exercise.duration} minutes` : ''} ${exercise.distance ? `${exercise.distance} miles` : ''}` :
+                            `${exercise.exercise} - ${exercise.weight} lbs - ${exercise.sets} sets - ${exercise.reps.join(', ')} reps`
+                          }
+                        </Badge>
+                      ))}
+                    </Card.Body>
+                  </Card>
+                </>
+              )}
+              <br></br><h3>Last {lastWorkout.splitDay} Workout</h3>
+              <Card>
+                <Card.Body>
+                  {splitDayExercises.map((exercise, index) => (
                     <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
-                      {lastNextSplitWorkout.splitDay === 'Cardio' ? 
+                      {lastWorkout.splitDay === 'Cardio' ? 
                         `${exercise.exercise} - ${exercise.duration ? `${exercise.duration} minutes` : ''} ${exercise.distance ? `${exercise.distance} miles` : ''}` :
                         `${exercise.exercise} - ${exercise.weight} lbs - ${exercise.sets} sets - ${exercise.reps.join(', ')} reps`
                       }
@@ -160,87 +232,72 @@ const HomePage = () => {
               </Card>
             </>
           )}
-          <h3>Last {lastWorkout.splitDay} Workout</h3>
-          <Card>
-            <Card.Body>
-              {splitDayExercises.map((exercise, index) => (
-                <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
-                  {lastWorkout.splitDay === 'Cardio' ? 
-                    `${exercise.exercise} - ${exercise.duration ? `${exercise.duration} minutes` : ''} ${exercise.distance ? `${exercise.distance} miles` : ''}` :
-                    `${exercise.exercise} - ${exercise.weight} lbs - ${exercise.sets} sets - ${exercise.reps.join(', ')} reps`
-                  }
-                </Badge>
+          {!lastWorkout && (
+            <p>No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button></p>
+          )}
+
+          <h2 style={{ marginTop: '40px' }}>Your Workouts</h2>
+          {workouts.length === 0 ? (
+            <Alert variant="info">
+              No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button> Past workouts will be displayed here.
+            </Alert>
+          ) : (
+            <Row xs={1} md={2} lg={3} className="g-4" style={{ marginTop: '20px' }}>
+              {sortedWorkouts().map((workout, index) => (
+                <Col key={index}>
+                  <Card style={{ position: 'relative' }}>
+                    <Card.Body onClick={() => navigate(`/workout/${workout.id}`)} style={{ cursor: 'pointer' }}>
+                      <Card.Title>
+                        {workout.splitDay} Workout on {new Date(workout.timestamp.seconds * 1000).toLocaleDateString()}
+                      </Card.Title>
+                    </Card.Body>
+                    <FaTrash
+                      onClick={(e) => confirmDelete(workout.id, e)}
+                      style={{
+                        color: 'red',
+                        cursor: 'pointer',
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px'
+                      }}
+                    />
+                  </Card>
+                </Col>
               ))}
-            </Card.Body>
-          </Card>
+            </Row>
+          )}
+
+          <Modal show={showModal} onHide={() => setShowModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Delete</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>Are you sure you want to delete this workout?</Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDelete}>
+                Delete
+              </Button>
+            </Modal.Footer>
+          </Modal>
+
+          <Modal show={confirmModal} onHide={() => setConfirmModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Recommendation</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>Do you agree that today is likely to be a "{nextSplitDay}" day?</Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleDenyRecommendation}>
+                Deny
+              </Button>
+              <Button variant="primary" onClick={handleConfirmRecommendation}>
+                Confirm
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </>
       )}
-      {!lastWorkout && (
-        <p>No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button></p>
-      )}
-
-      <h2 style={{ marginTop: '40px' }}>Your Workouts</h2>
-      {loading ? (
-        <p>Loading...</p>
-      ) : workouts.length === 0 ? (
-        <Alert variant="info">
-          No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button> Past workouts will be displayed here.
-        </Alert>
-      ) : (
-        <Row xs={1} md={2} lg={3} className="g-4" style={{ marginTop: '20px' }}>
-          {sortedWorkouts().map((workout, index) => (
-            <Col key={index}>
-              <Card style={{ position: 'relative' }}>
-                <Card.Body onClick={() => navigate(`/workout/${workout.id}`)} style={{ cursor: 'pointer' }}>
-                  <Card.Title>
-                    {workout.splitDay} Workout on {new Date(workout.timestamp.seconds * 1000).toLocaleDateString()}
-                  </Card.Title>
-                </Card.Body>
-                <FaTrash
-                  onClick={(e) => confirmDelete(workout.id, e)}
-                  style={{
-                    color: 'red',
-                    cursor: 'pointer',
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px'
-                  }}
-                />
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
-
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Are you sure you want to delete this workout?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={confirmModal} onHide={() => setConfirmModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Recommendation</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Do you agree that today is likely to be a "{nextSplitDay}" day?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleDenyRecommendation}>
-            Deny
-          </Button>
-          <Button variant="primary" onClick={handleConfirmRecommendation}>
-            Confirm
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 };
