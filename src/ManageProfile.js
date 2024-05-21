@@ -4,34 +4,15 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import { db, auth } from './firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-const supplementsList = [
-  { name: 'Creatine', dosage: 5 },
-  { name: 'BCAAs', dosage: 5 },
-  { name: 'Protein', dosage: 30 },
-  { name: 'Beta-alanine', dosage: 5 },
-  { name: 'Caffeine', dosage: 200 },
-  { name: 'Glutamine', dosage: 5 },
-  { name: 'Pre-Workout', dosage: 10 },
-  { name: 'Post-Workout', dosage: 30 },
-];
-
-const generateSupplementOptions = () => {
-  let options = [];
-  supplementsList.forEach(supplement => {
-    for (let i = -10; i <= 10; i += 5) {
-      const dosage = supplement.dosage + i;
-      if (dosage > 0) {
-        options.push(`${supplement.name} - ${dosage}g`);
-      }
-    }
-  });
-  return options;
-};
-
 const ManageProfile = () => {
   const [split, setSplit] = useState('');
-  const [supplements, setSupplements] = useState([]);
-  const [amount, setAmount] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
+  const [weight, setWeight] = useState('');
+  const [heightFt, setHeightFt] = useState('');
+  const [heightIn, setHeightIn] = useState('');
+  const [bmi, setBmi] = useState('');
+  const [bodyFat, setBodyFat] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -44,7 +25,16 @@ const ManageProfile = () => {
         if (profileSnap.exists()) {
           const data = profileSnap.data();
           setSplit(data.split || '');
-          setSupplements(data.supplements ? data.supplements.split(',') : []);
+          setAge(data.age || '');
+          setGender(data.gender || '');
+          setWeight(data.weight || '');
+          if (data.height) {
+            const [ft, inch] = data.height.split("' ");
+            setHeightFt(ft || '');
+            setHeightIn(inch?.replace('"', '') || '');
+          }
+          setBmi(data.bmi || '');
+          setBodyFat(data.bodyFat || '');
         }
       }
     };
@@ -59,7 +49,12 @@ const ManageProfile = () => {
         const profileRef = doc(db, 'profiles', user.uid);
         await setDoc(profileRef, {
           split,
-          supplements: supplements.join(','),
+          age,
+          gender,
+          weight,
+          height: `${heightFt}' ${heightIn}"`,
+          bmi,
+          bodyFat,
         });
         setSuccessMessage('Profile updated successfully!');
         setErrorMessage('');
@@ -70,8 +65,6 @@ const ManageProfile = () => {
       }
     }
   };
-
-  const supplementOptions = generateSupplementOptions();
 
   return (
     <>
@@ -95,18 +88,72 @@ const ManageProfile = () => {
             <option value="hybrid">Hybrid Split - Combination of different splits based on individual preferences and goals</option>
           </Form.Control>
         </Form.Group>
-        <Form.Group controlId="formSupplements">
-          <Form.Label>Supplements</Form.Label>
+        <Form.Group controlId="formAge">
+          <Form.Label>Age</Form.Label>
+          <Form.Control
+            type="number"
+            placeholder="Enter your age"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formGender">
+          <Form.Label>Gender</Form.Label>
           <Form.Control
             as="select"
-            multiple
-            value={supplements}
-            onChange={(e) => setSupplements(Array.from(e.target.selectedOptions, option => option.value))}
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
           >
-            {supplementOptions.map((option, index) => (
-              <option key={index} value={option}>{option}</option>
-            ))}
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
           </Form.Control>
+        </Form.Group>
+        <Form.Group controlId="formWeight">
+          <Form.Label>Weight (lbs)</Form.Label>
+          <Form.Control
+            type="number"
+            placeholder="Enter your weight"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formHeight">
+          <Form.Label>Height</Form.Label>
+          <div style={{ display: 'flex' }}>
+            <Form.Control
+              type="number"
+              placeholder="ft"
+              value={heightFt}
+              onChange={(e) => setHeightFt(e.target.value)}
+              style={{ marginRight: '10px' }}
+            />
+            <Form.Control
+              type="number"
+              placeholder="in"
+              value={heightIn}
+              onChange={(e) => setHeightIn(e.target.value)}
+            />
+          </div>
+        </Form.Group>
+        <Form.Group controlId="formBmi">
+          <Form.Label>BMI</Form.Label>
+          <Form.Control
+            type="number"
+            placeholder="Enter your BMI"
+            value={bmi}
+            onChange={(e) => setBmi(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formBodyFat">
+          <Form.Label>Body Fat Percentage (%)</Form.Label>
+          <Form.Control
+            type="number"
+            placeholder="Enter your body fat percentage"
+            value={bodyFat}
+            onChange={(e) => setBodyFat(e.target.value)}
+          />
         </Form.Group>
         <Button variant="primary" type="submit">
           Save Profile

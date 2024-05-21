@@ -1,23 +1,23 @@
-// src/LogWorkout.js
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert, Badge } from 'react-bootstrap';
 import { db, auth } from './firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
-const supplementsList = [
+const predefinedSupplements = [
   'Creatine',
   'BCAAs',
   'Protein',
   'Beta-alanine',
   'Caffeine',
   'Glutamine',
-  'Pre-Workout',
-  'Post-Workout',
+  'Pre-Workout'
 ];
 
 const LogWorkout = () => {
+  const navigate = useNavigate();
   const [exercise, setExercise] = useState('');
+  const [customExercise, setCustomExercise] = useState('');
   const [weight, setWeight] = useState('');
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');
@@ -25,10 +25,15 @@ const LogWorkout = () => {
   const [quality, setQuality] = useState('');
   const [splitDay, setSplitDay] = useState('');
   const [selectedSupplement, setSelectedSupplement] = useState('');
+  const [customSupplement, setCustomSupplement] = useState('');
   const [dosage, setDosage] = useState('');
+  const [unit, setUnit] = useState('g');
   const [supplements, setSupplements] = useState([]);
   const [profile, setProfile] = useState({});
+  const [customSupplements, setCustomSupplements] = useState([]);
+  const [customExercises, setCustomExercises] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const splitOptions = {
     'push-pull-legs': ['Push', 'Pull', 'Legs'],
@@ -49,6 +54,8 @@ const LogWorkout = () => {
         if (profileSnap.exists()) {
           const data = profileSnap.data();
           setProfile(data);
+          setCustomSupplements(data.customSupplements || []);
+          setCustomExercises(data.customExercises || []);
         } else {
           setProfile({ split: '' });
         }
@@ -57,12 +64,29 @@ const LogWorkout = () => {
     fetchProfile();
   }, []);
 
-  const handleAddSupplement = () => {
-    if (selectedSupplement && dosage) {
-      const newSupplement = `${selectedSupplement} - ${dosage}`;
+  const handleAddSupplement = async () => {
+    let newSupplement = '';
+    if (selectedSupplement) {
+      newSupplement = `${selectedSupplement} - ${dosage}${unit}`;
+    } else if (customSupplement) {
+      newSupplement = `${customSupplement} - ${dosage}${unit}`;
+      // Save custom supplement to the user's profile
+      const user = auth.currentUser;
+      if (user) {
+        const profileRef = doc(db, 'profiles', user.uid);
+        await updateDoc(profileRef, {
+          customSupplements: [...customSupplements, customSupplement]
+        });
+        setCustomSupplements([...customSupplements, customSupplement]);
+      }
+    }
+    
+    if (newSupplement) {
       setSupplements([...supplements, newSupplement]);
       setSelectedSupplement('');
+      setCustomSupplement('');
       setDosage('');
+      setUnit('g');
     }
   };
 
@@ -71,8 +95,9 @@ const LogWorkout = () => {
     const user = auth.currentUser;
     if (user) {
       try {
+        const exerciseToSave = customExercise ? customExercise : exercise;
         await addDoc(collection(db, 'workouts'), {
-          exercise,
+          exercise: exerciseToSave,
           weight,
           sets,
           reps,
@@ -84,7 +109,21 @@ const LogWorkout = () => {
           uid: user.uid,
           timestamp: serverTimestamp()
         });
+        setSuccessMessage('Workout logged successfully!');
+        setErrorMessage('');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000); // Redirect after 2 seconds
+        // Save custom exercise to the user's profile
+        if (customExercise && !customExercises.includes(customExercise)) {
+          const profileRef = doc(db, 'profiles', user.uid);
+          await updateDoc(profileRef, {
+            customExercises: [...customExercises, customExercise]
+          });
+          setCustomExercises([...customExercises, customExercise]);
+        }
         setExercise('');
+        setCustomExercise('');
         setWeight('');
         setSets('');
         setReps('');
@@ -92,16 +131,20 @@ const LogWorkout = () => {
         setQuality('');
         setSplitDay('');
         setSupplements([]);
-        setErrorMessage('');
       } catch (error) {
         console.error(error);
         setErrorMessage(error.message);
+        setSuccessMessage('');
       }
     }
   };
 
+  const allSupplements = [...predefinedSupplements, ...customSupplements];
+  const allExercises = [...customExercises];
+
   return (
     <>
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       <Form onSubmit={handleLogWorkout}>
         <Form.Group controlId="formSplitDay">
@@ -110,6 +153,7 @@ const LogWorkout = () => {
             as="select"
             value={splitDay}
             onChange={(e) => setSplitDay(e.target.value)}
+            required
           >
             <option value="">Select Split Day</option>
             {profile.split && splitOptions[profile.split]?.map((option, index) => (
@@ -120,10 +164,22 @@ const LogWorkout = () => {
         <Form.Group controlId="formExercise">
           <Form.Label>Exercise</Form.Label>
           <Form.Control
-            type="text"
-            placeholder="Enter exercise"
+            as="select"
             value={exercise}
             onChange={(e) => setExercise(e.target.value)}
+            required={!customExercise} // Required if no custom exercise
+          >
+            <option value="">Select Exercise</option>
+            {allExercises.map((exercise, index) => (
+              <option key={index} value={exercise}>{exercise}</option>
+            ))}
+          </Form.Control>
+          <Form.Control
+            type="text"
+            placeholder="Or enter a new exercise"
+            value={customExercise}
+            onChange={(e) => setCustomExercise(e.target.value)}
+            required={!exercise} // Required if no selected exercise
           />
         </Form.Group>
         <Form.Group controlId="formWeight">
@@ -133,6 +189,7 @@ const LogWorkout = () => {
             placeholder="Enter weight"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
+            required
           />
         </Form.Group>
         <Form.Group controlId="formSets">
@@ -142,6 +199,7 @@ const LogWorkout = () => {
             placeholder="Enter sets"
             value={sets}
             onChange={(e) => setSets(e.target.value)}
+            required
           />
         </Form.Group>
         <Form.Group controlId="formReps">
@@ -151,6 +209,7 @@ const LogWorkout = () => {
             placeholder="Enter reps"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
+            required
           />
         </Form.Group>
         <Form.Group controlId="formNutrition">
@@ -168,6 +227,7 @@ const LogWorkout = () => {
             as="select"
             value={quality}
             onChange={(e) => setQuality(e.target.value)}
+            required
           >
             <option value="">Select Quality</option>
             <option value="poor">Poor</option>
@@ -177,7 +237,7 @@ const LogWorkout = () => {
         </Form.Group>
         <Form.Group controlId="formSupplements">
           <Form.Label>Supplements</Form.Label>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
             <Form.Control
               as="select"
               value={selectedSupplement}
@@ -185,10 +245,17 @@ const LogWorkout = () => {
               style={{ marginRight: '10px' }}
             >
               <option value="">Select Supplement</option>
-              {supplementsList.map((supplement, index) => (
+              {allSupplements.map((supplement, index) => (
                 <option key={index} value={supplement}>{supplement}</option>
               ))}
             </Form.Control>
+            <Form.Control
+              type="text"
+              placeholder="Custom Supplement"
+              value={customSupplement}
+              onChange={(e) => setCustomSupplement(e.target.value)}
+              style={{ marginRight: '10px' }}
+            />
             <Form.Control
               type="number"
               placeholder="Dosage"
@@ -196,6 +263,15 @@ const LogWorkout = () => {
               onChange={(e) => setDosage(e.target.value)}
               style={{ width: '100px', marginRight: '10px' }}
             />
+            <Form.Control
+              as="select"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              style={{ width: '70px', marginRight: '10px' }}
+            >
+              <option value="g">g</option>
+              <option value="mg">mg</option>
+            </Form.Control>
             <Button onClick={handleAddSupplement}>Add</Button>
           </div>
         </Form.Group>
