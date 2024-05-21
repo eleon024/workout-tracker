@@ -1,4 +1,3 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Container, Navbar, Nav, Button } from 'react-bootstrap';
@@ -9,9 +8,10 @@ import Recommendations from './Recommendations';
 import ManageProfile from './ManageProfile';
 import PrivateRoute from './PrivateRoute';
 import { auth } from './firebase';
-import UserDashboard from './UserDashboard';
+
 import WorkoutDetails from './WorkoutDetails';
 import { useAuth } from './useAuth';
+import HomePage from './HomePage';
 
 function App() {
   const { currentUser } = useAuth();
@@ -33,7 +33,7 @@ function App() {
               {currentUser && (
                 <>
                   <Nav.Link as={Link} to="/log-workout">Log Workout</Nav.Link>
-                  {/* <Nav.Link as={Link} to="/recommendations">Recommendations</Nav.Link>*/}
+                  {/* <Nav.Link as={Link} to="/recommendations">Recommendations</Nav.Link> */}
                   <Nav.Link as={Link} to="/manage-profile">Manage Profile</Nav.Link>
                   <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 </>
@@ -48,12 +48,13 @@ function App() {
             <Route path="/sign-in" element={<SignIn />} />
             <Route element={<PrivateRoute />}>
               <Route path="/log-workout" element={<LogWorkout />} />
-    {/* <Route path="/recommendations" element={<Recommendations />} /> */}
+              {/* <Route path="/recommendations" element={<Recommendations />} /> */}
               <Route path="/manage-profile" element={<ManageProfile />} />
-              <Route path="/dashboard" element={<UserDashboard />} />
+              <Route path="/dashboard" element={<HomePage />} />
               <Route path="/workout/:id" element={<WorkoutDetails />} />
+              <Route path="/" element={<HomePage />} /> {/* HomePage as the default route */}
             </Route>
-            <Route path="/" element={<SignIn />} /> {/* Default to SignIn */}
+            <Route path="/" element={<SignIn />} /> {/* Default to SignIn if not authenticated */}
           </Routes>
         </Container>
       </div>

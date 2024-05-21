@@ -1,10 +1,11 @@
-// src/ManageProfile.js
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { db, auth } from './firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const ManageProfile = () => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [split, setSplit] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
@@ -24,6 +25,8 @@ const ManageProfile = () => {
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
           const data = profileSnap.data();
+          setFirstName(data.firstName || '');
+          setLastName(data.lastName || '');
           setSplit(data.split || '');
           setAge(data.age || '');
           setGender(data.gender || '');
@@ -48,6 +51,8 @@ const ManageProfile = () => {
       try {
         const profileRef = doc(db, 'profiles', user.uid);
         await setDoc(profileRef, {
+          firstName,
+          lastName,
           split,
           age,
           gender,
@@ -71,6 +76,24 @@ const ManageProfile = () => {
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       <Form onSubmit={handleProfileSave}>
+        <Form.Group controlId="formFirstName">
+          <Form.Label>First Name</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Enter your first name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formLastName">
+          <Form.Label>Last Name</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Enter your last name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </Form.Group>
         <Form.Group controlId="formSplit">
           <Form.Label>Workout Split</Form.Label>
           <Form.Control
