@@ -52,7 +52,7 @@ function App() {
               <Route path="/manage-profile" element={<ManageProfile />} />
               <Route path="/dashboard" element={<HomePage />} />
               <Route path="/workout/:id" element={<WorkoutDetails />} />
-              <Route path="/" element={<HomePage />} /> {/* HomePage as the default route */}
+              <Route path="/dashboard" element={<HomePage />} /> {/* HomePage as the default route */}
             </Route>
             <Route path="/" element={<SignIn />} /> {/* Default to SignIn if not authenticated */}
           </Routes>
