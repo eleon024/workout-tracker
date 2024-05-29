@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
-import { Card, Badge, Button, Alert, Row, Col, Modal } from 'react-bootstrap';
+import { Card, Badge, Button, Alert, Row, Col, Modal, Accordion} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
@@ -205,42 +205,68 @@ const HomePage = () => {
         <p>Loading...</p>
       ) : (
         <>
-          <Row xs={1} md={2} lg={2} className="g-4" style={{ marginTop: '20px' }}>
-            <Col>
-              <Card>
-                <Card.Body>
-                  <Card.Title>Weight Over Time</Card.Title>
-                  <Line data={generateChartData('Weight', 'weight')} options={chartOptions} />
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col>
-              <Card>
-                <Card.Body>
-                  <Card.Title>BMI Over Time</Card.Title>
-                  <Line data={generateChartData('BMI', 'bmi')} options={chartOptions} />
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col>
-              <Card>
-                <Card.Body>
-                  <Card.Title>Body Fat Over Time</Card.Title>
-                  <Line data={generateChartData('Body Fat', 'bodyFat')} options={chartOptions} />
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col>
-              <Card>
-                <Card.Body>
-                  <Card.Title>Muscle Mass Over Time</Card.Title>
-                  <Line data={generateChartData('Muscle Mass', 'musclemass')} options={chartOptions} />
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+        <Row xs={1} md={2} className="g-4" style={{ marginTop: '20px' }}>
+          <Col>
+            <Accordion defaultActiveKey={['0']} alwaysOpen>
+              <Accordion.Item eventKey="0">
+                <Accordion.Header>Weight Over Time</Accordion.Header>
+                <Accordion.Body>
+                  <Card>
+                    <Card.Body>
+                      <Line data={generateChartData('Weight', 'weight')} options={chartOptions} />
+                    </Card.Body>
+                  </Card>
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          </Col>
+          <Col>
+            <Accordion defaultActiveKey={['1']} alwaysOpen>
+              <Accordion.Item eventKey="1">
+                <Accordion.Header>BMI Over Time</Accordion.Header>
+                <Accordion.Body>
+                  <Card>
+                    <Card.Body>
+                      <Line data={generateChartData('BMI', 'bmi')} options={chartOptions} />
+                    </Card.Body>
+                  </Card>
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          </Col>
+          <Col>
+            <Accordion defaultActiveKey={['2']} alwaysOpen>
+              <Accordion.Item eventKey="2">
+                <Accordion.Header>Body Fat Over Time</Accordion.Header>
+                <Accordion.Body>
+                  <Card>
+                    <Card.Body>
+                      <Line data={generateChartData('Body Fat', 'bodyFat')} options={chartOptions} />
+                    </Card.Body>
+                  </Card>
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          </Col>
+          <Col>
+            <Accordion defaultActiveKey={['3']} alwaysOpen>
+              <Accordion.Item eventKey="3">
+                <Accordion.Header>Muscle Mass Over Time</Accordion.Header>
+                <Accordion.Body>
+                  <Card>
+                    <Card.Body>
+                      <Line data={generateChartData('Muscle Mass', 'musclemass')} options={chartOptions} />
+                    </Card.Body>
+                  </Card>
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          </Col>
+        </Row>
 
-          <h2 style={{ marginTop: '40px' }}>Your Workouts</h2>
+
+        
+        <h2 style={{ marginTop: '40px' }}>Your Workouts</h2>
           {workouts.length === 0 ? (
             <Alert variant="info">
               No workouts logged yet. <Button onClick={() => navigate('/log-workout')}>Log a workout!</Button> Past workouts will be displayed here.
@@ -270,7 +296,7 @@ const HomePage = () => {
               ))}
             </Row>
           )}
-
+      
           <Modal show={showModal} onHide={() => setShowModal(false)}>
             <Modal.Header closeButton>
               <Modal.Title>Confirm Delete</Modal.Title>

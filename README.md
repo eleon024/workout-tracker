@@ -13,7 +13,9 @@ Welcome to the Workout Logger App! This app allows you to log and analyze your w
 - **Nutrition Logging**: Log what you ate during your workout.
 - **Workout Quality Tracking**: Rate the quality of your workout.
 - **Workout History**: View your past workouts in a clean, card-based interface.
-- **Weight, BMI, and Body Fat Tracking**: Track your weight, BMI, and body fat over time with visual charts on the homepage.
+- **Weight, BMI, Body Fat, and Muscle Mass Tracking**: Track your weight, BMI, body fat, and muscle mass over time with visual charts on the homepage.
+- **Performance Graphs**: Visualize your performance for individual exercises with detailed line charts.
+- **Workout Quality and Supplement Usage Analysis**: View pie and bar charts for workout quality distribution and supplement usage.
 
 ## How It Works
 
@@ -45,8 +47,18 @@ Welcome to the Workout Logger App! This app allows you to log and analyze your w
 
 ### Tracking Metrics Over Time
 
-- **Weight, BMI, and Body Fat Charts**: View visual charts that display your weight, BMI, and body fat metrics over time on the homepage. This feature helps you track your progress and stay motivated.
+- **Weight, BMI, Body Fat, and Muscle Mass Charts**: View visual charts that display your weight, BMI, body fat, and muscle mass metrics over time on the homepage. This feature helps you track your progress and stay motivated.
 ![BMI, Weight, and Body Fat Charts](<Charts over time.png>)
+
+### Performance Graphs
+
+- **Exercise Performance Graphs**: Visualize your performance for individual exercises with detailed line charts.
+![Performance Graphs](Performance_Graphs.png)
+
+### Workout Quality and Supplement Usage Analysis
+
+- **Workout Quality Distribution**: View a pie chart showing the distribution of workout quality ratings.
+- **Supplement Usage**: View a bar chart showing the frequency of supplement usage.
 
 ## Future Enhancements
 

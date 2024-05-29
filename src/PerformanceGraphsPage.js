@@ -80,14 +80,14 @@ const PerformanceGraphsPage = () => {
         label: 'Workout Quality Distribution',
         data: Object.values(qualityCounts),
         backgroundColor: [
+          'rgba(60,231, 1, 0.6)',
           'rgba(255, 99, 132, 0.6)',
-          'rgba(54, 162, 235, 0.6)',
-          'rgba(255, 206, 86, 0.6)'
+          'rgba(128, 128, 128, 0.6)'
         ],
         borderColor: [
+          'rgba(60, 231, 1, 1)',
           'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)'
+          'rgba(128, 128, 128, 1)'
         ],
         borderWidth: 1
       }]
