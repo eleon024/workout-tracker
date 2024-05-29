@@ -14,6 +14,7 @@ const ManageProfile = () => {
   const [heightIn, setHeightIn] = useState('');
   const [bmi, setBmi] = useState('');
   const [bodyFat, setBodyFat] = useState('');
+  const [musclemass, setMuscleMass] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -38,6 +39,7 @@ const ManageProfile = () => {
           }
           setBmi(data.bmi || '');
           setBodyFat(data.bodyFat || '');
+          setMuscleMass(data.musclemass || "");
         }
       }
     };
@@ -60,6 +62,7 @@ const ManageProfile = () => {
           height: `${heightFt}' ${heightIn}"`,
           bmi,
           bodyFat,
+          musclemass
         });
 
         // Save weight, BMI, and body fat updates to the metrics sub-collection
@@ -69,6 +72,7 @@ const ManageProfile = () => {
           weight,
           bmi,
           bodyFat,
+          musclemass,
           timestamp
         });
 
@@ -187,6 +191,15 @@ const ManageProfile = () => {
             placeholder="Enter your body fat percentage"
             value={bodyFat}
             onChange={(e) => setBodyFat(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formMuscleMass">
+          <Form.Label>Muscle Mass (lbs)</Form.Label>
+          <Form.Control
+            type="number"
+            placeholder="Enter your muscle mass"
+            value={musclemass}
+            onChange={(e) => setMuscleMass(e.target.value)}
           />
         </Form.Group>
         <Button variant="primary" type="submit">

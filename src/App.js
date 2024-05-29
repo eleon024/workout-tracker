@@ -8,7 +8,7 @@ import Recommendations from './Recommendations';
 import ManageProfile from './ManageProfile';
 import PrivateRoute from './PrivateRoute';
 import { auth } from './firebase';
-
+import PerformanceGraphsPage  from './PerformanceGraphsPage';
 import WorkoutDetails from './WorkoutDetails';
 import { useAuth } from './useAuth';
 import HomePage from './HomePage';
@@ -35,6 +35,7 @@ function App() {
                   <Nav.Link as={Link} to="/log-workout">Log Workout</Nav.Link>
                   {/* <Nav.Link as={Link} to="/recommendations">Recommendations</Nav.Link> */}
                   <Nav.Link as={Link} to="/manage-profile">Manage Profile</Nav.Link>
+                  <Nav.Link as={Link} to="/performance-graphs">Performance Graphs</Nav.Link> {/* Add link to new page */}
                   <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 </>
               )}
@@ -52,7 +53,8 @@ function App() {
               <Route path="/manage-profile" element={<ManageProfile />} />
               <Route path="/dashboard" element={<HomePage />} />
               <Route path="/workout/:id" element={<WorkoutDetails />} />
-              <Route path="/dashboard" element={<HomePage />} /> {/* HomePage as the default route */}
+              <Route path="/performance-graphs" element={<PerformanceGraphsPage />} /> {/* Add route for new page */}
+              <Route path="/" element={<HomePage />} /> {/* HomePage as the default route */}
             </Route>
             <Route path="/" element={<SignIn />} /> {/* Default to SignIn if not authenticated */}
           </Routes>
