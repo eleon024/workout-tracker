@@ -24,13 +24,13 @@ const LogWorkout = () => {
   const [nutrition, setNutrition] = useState('');
   const [quality, setQuality] = useState('');
   const [splitDay, setSplitDay] = useState('');
-  const [selectedSupplement, setSelectedSupplement] = useState('');
-  const [customSupplement, setCustomSupplement] = useState('');
+  const [selectedSupplement, setSelectedSupplement] = useState(localStorage.getItem('selectedSupplement') || '');
+  const [customSupplement, setCustomSupplement] =  useState(JSON.parse(localStorage.getItem('customSupplement')) || []);
   const [dosage, setDosage] = useState('');
   const [unit, setUnit] = useState('g');
   const [supplements, setSupplements] = useState(JSON.parse(localStorage.getItem('supplements')) || []);
   const [profile, setProfile] = useState({});
-  const [customSupplements, setCustomSupplements] = useState([]);
+  const [customSupplements, setCustomSupplements] = useState(JSON.parse(localStorage.getItem('customSupplements')) || []);
   const [customExercises, setCustomExercises] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -71,9 +71,24 @@ const LogWorkout = () => {
     localStorage.setItem('exercises', JSON.stringify(exercises));
   }, [exercises]);
 
+
+
+  useEffect(() => {
+    localStorage.setItem('selectedSupplement', selectedSupplement);
+  }, [selectedSupplement]);
+
+  useEffect(() => {
+    localStorage.setItem('customSupplements', JSON.stringify(customSupplements));
+  }, [customSupplements]);
+
+  useEffect(() => {
+    localStorage.setItem('customSupplement', JSON.stringify(customSupplement));
+  }, [customSupplements]);
+
+
   useEffect(() => {
     localStorage.setItem('supplements', JSON.stringify(supplements));
-  }, [exercises]);
+  }, [supplements]);
 
   const handleAddSupplement = async () => {
     let newSupplement = '';
