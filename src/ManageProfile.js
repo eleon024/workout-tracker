@@ -15,6 +15,8 @@ const ManageProfile = () => {
   const [bmi, setBmi] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [musclemass, setMuscleMass] = useState('');
+  const [customExercises, setCustomExercises] = useState({});
+  const [customSupplements, setCustomSupplements] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -40,6 +42,8 @@ const ManageProfile = () => {
           setBmi(data.bmi || '');
           setBodyFat(data.bodyFat || '');
           setMuscleMass(data.musclemass || "");
+          setCustomExercises(data.customExercises || {});
+          setCustomSupplements(data.customSupplements || []);
         }
       }
     };
@@ -62,10 +66,12 @@ const ManageProfile = () => {
           height: `${heightFt}' ${heightIn}"`,
           bmi,
           bodyFat,
-          musclemass
+          musclemass,
+          customExercises,  // Ensure custom exercises are included
+          customSupplements  // Ensure custom supplements are included
         });
 
-        // Save weight, BMI, and body fat updates to the metrics sub-collection
+        // Save weight, BMI, body fat, and muscle mass updates to the metrics sub-collection
         const metricsRef = collection(profileRef, 'metrics');
         const timestamp = Timestamp.now();
         await addDoc(metricsRef, {
