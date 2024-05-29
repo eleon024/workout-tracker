@@ -48,17 +48,19 @@ Welcome to the Workout Logger App! This app allows you to log and analyze your w
 ### Tracking Metrics Over Time
 
 - **Weight, BMI, Body Fat, and Muscle Mass Charts**: View visual charts that display your weight, BMI, body fat, and muscle mass metrics over time on the homepage. This feature helps you track your progress and stay motivated.
-![BMI, Weight, and Body Fat Charts](<Charts over time.png>)
+![BMI, Weight, Body Fat, and Muscle Mass Charts](<Charts over time.png>)
 
 ### Performance Graphs
 
 - **Exercise Performance Graphs**: Visualize your performance for individual exercises with detailed line charts.
-![Performance Graphs](Performance_Graphs.png)
+![Performance Graphs](Performance_Graph1.png)
+
 
 ### Workout Quality and Supplement Usage Analysis
 
 - **Workout Quality Distribution**: View a pie chart showing the distribution of workout quality ratings.
 - **Supplement Usage**: View a bar chart showing the frequency of supplement usage.
+![Performance Graphs2](Performance_Graph2.png)
 
 ## Future Enhancements
 
