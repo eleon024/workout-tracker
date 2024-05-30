@@ -5,6 +5,8 @@ import { Row, Col, Accordion, Card } from 'react-bootstrap';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
+import { Chart } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 const PerformanceGraphsPage = () => {
   const [workouts, setWorkouts] = useState([]);
@@ -46,7 +48,47 @@ const PerformanceGraphsPage = () => {
 
   const chartOptions = {
     animation: false,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date'
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Weight (lbs)'
+        }
+      }
+    }
   };
+
+
+
+
+  const pieChartOptions = {
+    plugins: {
+      title: {
+        display: true,
+        text: 'Workout Quality Distribution'
+      },
+      datalabels: {
+        formatter: (value, ctx) => {
+          let sum = 0;
+          let dataArr = ctx.chart.data.datasets[0].data;
+          dataArr.map((data) => {
+            sum += data;
+          });
+          let percentage = ((value * 100) / sum).toFixed(2) + "%";
+          return `${percentage} (${value}/${sum})`;
+        },
+        color: "#FFF",
+      }
+    }
+  };
+
+  
 
   const getExercisePerformanceData = (exerciseName) => {
     const exerciseData = workouts.flatMap(workout => 
@@ -69,30 +111,7 @@ const PerformanceGraphsPage = () => {
     };
   };
 
-  // const getWorkoutQualityData = () => {
-  //   const qualityCounts = workouts.reduce((acc, workout) => {
-  //     acc[workout.quality] = (acc[workout.quality] || 0) + 1;
-  //     return acc;
-  //   }, {});
-  //   return {
-  //     labels: Object.keys(qualityCounts),
-  //     datasets: [{
-  //       label: 'Workout Quality Distribution',
-  //       data: Object.values(qualityCounts),
-  //       backgroundColor: [
-  //         'rgba(60,231, 1, 0.6)',
-  //         'rgba(255, 99, 132, 0.6)',
-  //         'rgba(128, 128, 128, 0.6)'
-  //       ],
-  //       borderColor: [
-  //         'rgba(60, 231, 1, 1)',
-  //         'rgba(255, 99, 132, 1)',
-  //         'rgba(128, 128, 128, 1)'
-  //       ],
-  //       borderWidth: 1
-  //     }]
-  //   };
-  // };
+
 
   const getWorkoutQualityData = () => {
   const qualityCounts = workouts.reduce((acc, workout) => {
@@ -102,9 +121,9 @@ const PerformanceGraphsPage = () => {
 
   // Manually map qualities to colors
   const mappedColors = {
-    great: 'rgba(60, 231, 1, 0.6)', // Green
-    normal: 'rgba(128, 128, 128, 0.6)', // Grey
-    poor: 'rgba(255, 99, 132, 0.6)' // Red
+    Great: 'rgba(60, 231, 1, 0.6)', // Green
+    Normal: 'rgba(128, 128, 128, 0.6)', // Grey
+    Poor: 'rgba(255, 99, 132, 0.6)' // Red
   };
 
   // Map each key in qualityCounts to its corresponding color
@@ -168,7 +187,7 @@ const PerformanceGraphsPage = () => {
               <Accordion.Item eventKey="quality">
                 <Accordion.Header>Workout Quality Distribution</Accordion.Header>
                 <Accordion.Body>
-                  <Pie data={getWorkoutQualityData()} />
+                  <Pie data={getWorkoutQualityData()} options={pieChartOptions} plugins={[ChartDataLabels]}  />
                 </Accordion.Body>
               </Accordion.Item>
             </Col>
