@@ -69,30 +69,62 @@ const PerformanceGraphsPage = () => {
     };
   };
 
+  // const getWorkoutQualityData = () => {
+  //   const qualityCounts = workouts.reduce((acc, workout) => {
+  //     acc[workout.quality] = (acc[workout.quality] || 0) + 1;
+  //     return acc;
+  //   }, {});
+  //   return {
+  //     labels: Object.keys(qualityCounts),
+  //     datasets: [{
+  //       label: 'Workout Quality Distribution',
+  //       data: Object.values(qualityCounts),
+  //       backgroundColor: [
+  //         'rgba(60,231, 1, 0.6)',
+  //         'rgba(255, 99, 132, 0.6)',
+  //         'rgba(128, 128, 128, 0.6)'
+  //       ],
+  //       borderColor: [
+  //         'rgba(60, 231, 1, 1)',
+  //         'rgba(255, 99, 132, 1)',
+  //         'rgba(128, 128, 128, 1)'
+  //       ],
+  //       borderWidth: 1
+  //     }]
+  //   };
+  // };
+
   const getWorkoutQualityData = () => {
-    const qualityCounts = workouts.reduce((acc, workout) => {
-      acc[workout.quality] = (acc[workout.quality] || 0) + 1;
-      return acc;
-    }, {});
-    return {
-      labels: Object.keys(qualityCounts),
-      datasets: [{
-        label: 'Workout Quality Distribution',
-        data: Object.values(qualityCounts),
-        backgroundColor: [
-          'rgba(60,231, 1, 0.6)',
-          'rgba(255, 99, 132, 0.6)',
-          'rgba(128, 128, 128, 0.6)'
-        ],
-        borderColor: [
-          'rgba(60, 231, 1, 1)',
-          'rgba(255, 99, 132, 1)',
-          'rgba(128, 128, 128, 1)'
-        ],
-        borderWidth: 1
-      }]
-    };
+  const qualityCounts = workouts.reduce((acc, workout) => {
+    acc[workout.quality] = (acc[workout.quality] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Manually map qualities to colors
+  const mappedColors = {
+    great: 'rgba(60, 231, 1, 0.6)', // Green
+    normal: 'rgba(128, 128, 128, 0.6)', // Grey
+    poor: 'rgba(255, 99, 132, 0.6)' // Red
   };
+
+  // Map each key in qualityCounts to its corresponding color
+  const coloredData = Object.entries(qualityCounts).reduce((acc, [key, value]) => {
+    acc[key] = { count: value, color: mappedColors[key] }; // Store both count and color
+    return acc;
+  }, {});
+
+  return {
+    labels: Object.keys(coloredData),
+    datasets: [{
+      label: 'Workout Quality Distribution',
+      data: Object.values(coloredData).map(item => item.count), // Extract just the counts for the dataset
+      backgroundColor: Object.values(coloredData).map(item => item.color), // Use the mapped colors for background
+      borderColor: Object.values(coloredData).map(item => item.color), // Use the same colors for border
+      borderWidth: 1
+    }]
+  };
+};
+
 
   const getSupplementUsageData = () => {
     const supplements = workouts.flatMap(workout => workout.supplements);
