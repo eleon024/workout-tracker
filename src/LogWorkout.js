@@ -380,7 +380,6 @@ const LogWorkout = () => {
                 <option value="Tired">Tired</option>
                 <option value="Energized">Energized</option>
                 <option value="Relaxed">Relaxed</option>
-                <option value="Exhausted">Exhausted</option>
               </Form.Control>
             </Form.Group>
         
