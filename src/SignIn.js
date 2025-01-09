@@ -14,7 +14,7 @@ const SignIn = () => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/'); // Redirect to home page after sign in
+      navigate('/dashboard'); // Redirect to home page after sign in
     } catch (error) {
       setErrorMessage(error.message);
     }
