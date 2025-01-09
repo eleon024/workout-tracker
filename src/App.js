@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Container, Navbar, Nav, Button } from 'react-bootstrap';
 import SignUp from './SignUp';
 import SignIn from './SignIn';
@@ -54,7 +54,6 @@ function App() {
               <Route path="/dashboard" element={<HomePage />} />
               <Route path="/workout/:id" element={<WorkoutDetails />} />
               <Route path="/performance-graphs" element={<PerformanceGraphsPage />} /> {/* Add route for new page */}
-              <Route path="/" element={<HomePage />} /> {/* HomePage as the default route */}
             </Route>
             <Route path="/" element={<SignIn />} /> {/* Default to SignIn if not authenticated */}
           </Routes>
