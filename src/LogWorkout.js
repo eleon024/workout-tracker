@@ -246,6 +246,31 @@ const LogWorkout = () => {
     setReps(newReps);
   };
 
+   
+  const getDisplayText = (ex) => {
+    
+    if (ex.exercise === 'Swimming') {
+      // Swimming
+      let text = `Swimming - ${ex.swimDistance || 0} meters`;
+      if (ex.swimFeel) text += ` - ${ex.swimFeel}`;
+      if (ex.feltDizzy) text += ` (Dizzy)`;
+      // Optionally display strokesUsed
+      if (ex.strokesUsed && ex.strokesUsed.length > 0) {
+        text += ` | Strokes: ${ex.strokesUsed.join(', ')}`;
+      }
+      return text;
+    } 
+    else if (ex.duration !== undefined || ex.distance !== undefined) {
+  
+      const durationText = ex.duration ? `${ex.duration} minutes` : '';
+      const distanceText = ex.distance ? `${ex.distance} miles` : '';
+      return `${ex.exercise} - ${durationText} ${distanceText}`;
+    } 
+    else {
+      return `${ex.exercise} - ${ex.weight || 0} lbs - ${ex.sets || 0} sets - ${ex.reps?.join(', ') || '0'} reps`;
+    }
+  };
+
   const handleRepsChange = (index, value) => {
     const newReps = [...reps];
     newReps[index] = value;
@@ -386,12 +411,15 @@ const LogWorkout = () => {
             </Form.Group>
         
             <Form.Group controlId="formDizzy">
-              <Form.Check
-                type="checkbox"
-                label="Did you feel dizzy?"
-                checked={feltDizzy}
-                onChange={() => setFeltDizzy(!feltDizzy)}
-              />
+            <Form.Label>Did you feel dizzy?</Form.Label>
+            <Form.Control
+              as="select"
+              value={feltDizzy ? 'yes' : 'no'}    // Map boolean to string
+              onChange={(e) => setFeltDizzy(e.target.value === 'yes')} // Convert back to bool
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </Form.Control>
             </Form.Group>
           </>
         ) :(
@@ -435,7 +463,9 @@ const LogWorkout = () => {
           Add Exercise
         </Button>
         <div>
-          {exercises.map((ex, index) => (
+        {exercises.map((ex, index) => {
+          const displayText = getDisplayText(ex);
+          return (
             <div key={index}>
               <Badge
                 pill
@@ -443,14 +473,12 @@ const LogWorkout = () => {
                 style={{ marginRight: '5px', marginTop: '10px', cursor: 'pointer' }}
                 onClick={() => handleRemoveExercise(index)}
               >
-                {splitDay === 'Cardio' ? 
-                  `${ex.exercise} - ${ex.duration ? `${ex.duration} minutes` : ''} ${ex.distance ? `${ex.distance} miles` : ''}` :
-                  `${ex.exercise} - ${ex.weight} lbs - ${ex.sets} sets - ${ex.reps.join(', ')} reps`
-                }
+                {displayText}
               </Badge>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
         <Form.Group controlId="formNutrition" style={{ marginTop: '20px' }}>
           <Form.Label>Nutrition</Form.Label>
           <Form.Control
