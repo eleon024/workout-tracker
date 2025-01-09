@@ -301,6 +301,7 @@ const LogWorkout = () => {
             ))}
           </Form.Control>
         </Form.Group>
+        {splitDay !== 'Swimming' && (    
         <Form.Group controlId="formExercise">
           <Form.Label>Exercise</Form.Label>
           <Form.Control
@@ -322,6 +323,7 @@ const LogWorkout = () => {
            
           />
         </Form.Group>
+        )}
 
         {splitDay === 'Cardio' ? (
           <>
