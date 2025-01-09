@@ -37,16 +37,24 @@ const LogWorkout = () => {
   const [exercises, setExercises] = useState(JSON.parse(localStorage.getItem('exercises')) || []); // State to track multiple exercises in a workout
   const [duration, setDuration] = useState('');
   const [distance, setDistance] = useState('');
+  const [swimDistance, setSwimDistance] = useState('');
+  const [swimFeel, setSwimFeel] = useState('');
+  const [strokesUsed, setStrokesUsed] = useState([]);
+  const [feltDizzy, setFeltDizzy] = useState(false);
+  const strokeOptions = ['Freestyle', 'Backstroke', 'Breaststroke', 'Butterfly'];
+
 
   const splitOptions = {
-    'push-pull-legs': ['Push', 'Pull', 'Legs', 'Cardio'],
-    'upper-lower': ['Upper', 'Lower', 'Cardio'],
-    'full-body': ['Full Body', 'Cardio'],
-    'bro-split': ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Cardio'],
-    'body-part': ['Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio'],
-    'push-pull': ['Push', 'Pull', 'Cardio'],
-    'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio'],
+    'push-pull-legs': ['Push', 'Pull', 'Legs', 'Cardio', 'Swimming'],
+    'upper-lower': ['Upper', 'Lower', 'Cardio', 'Swimming'],
+    'full-body': ['Full Body', 'Cardio', 'Swimming'],
+    'bro-split': ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Cardio', 'Swimming'],
+    'body-part': ['Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio', 'Swimming'],
+    'push-pull': ['Push', 'Pull', 'Cardio', 'Swimming'],
+    'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs', 'Cardio', 'Swimming'],
   };
+
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -122,17 +130,38 @@ const LogWorkout = () => {
   };
 
   const handleAddExercise = () => {
-    const exerciseToSave = customExercise ? customExercise : exercise;
-    const newExercise = {
-      exercise: exerciseToSave,
-      weight,
-      sets,
-      reps,
-      duration,
-      distance,
-    };
+    let newExercise = {};
+    
+    if (splitDay === 'Swimming') {
+      // Swimming fields
+      newExercise = {
+        exercise: 'Swimming',
+        swimDistance,
+        swimFeel,
+        strokesUsed,
+        feltDizzy,
+      };
+    } else if (splitDay === 'Cardio') {
+      // Cardio fields
+      newExercise = {
+        exercise: customExercise || exercise, 
+        duration,
+        distance,
+      };
+    } else {
+      // Strength fields
+      newExercise = {
+        exercise: customExercise || exercise,
+        weight,
+        sets,
+        reps,
+      };
+    }
+  
+    // Add to exercises array
     setExercises([...exercises, newExercise]);
-    // Clear form fields after adding exercise
+  
+    // Clear out relevant fields
     setExercise('');
     setCustomExercise('');
     setWeight('');
@@ -140,7 +169,12 @@ const LogWorkout = () => {
     setReps(['']);
     setDuration('');
     setDistance('');
+    setSwimDistance('');
+    setSwimFeel('');
+    setStrokesUsed([]);
+    setFeltDizzy(false);
   };
+  
 
   const handleLogWorkout = async (e) => {
     e.preventDefault();
@@ -218,6 +252,15 @@ const LogWorkout = () => {
     setReps(newReps);
   };
 
+  const handleStrokeChange = (stroke) => {
+    if (strokesUsed.includes(stroke)) {
+      setStrokesUsed(strokesUsed.filter((s) => s !== stroke));
+    } else {
+      setStrokesUsed([...strokesUsed, stroke]);
+    }
+  };
+  
+
   const handleRemoveExercise = (index) => {
     const newExercises = exercises.filter((_, i) => i !== index);
     setExercises(newExercises);
@@ -226,12 +269,16 @@ const LogWorkout = () => {
   const handleSplitDayChange = (e) => {
     const value = e.target.value;
     setSplitDay(value);
-    if (value === 'Cardio') {
+    if (value === 'Cardio' || value === 'Swimming') {
       setWeight('');
-      setSets(1);
+      setSets('');
       setReps(['']);
       setDuration('');
       setDistance('');
+      setSwimDistance('');
+      setSwimFeel('');
+      setStrokesUsed([]);
+      setFeltDizzy(false);
     }
   };
 
@@ -297,7 +344,56 @@ const LogWorkout = () => {
               />
             </Form.Group>
           </>
-        ) : (
+        ) : splitDay === 'Swimming' ? (
+          <>
+            <Form.Group controlId="formSwimDistance">
+              <Form.Label>Distance (meters)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter distance in meters"
+                value={swimDistance}
+                onChange={(e) => setSwimDistance(e.target.value)}
+              />
+            </Form.Group>
+        
+            <Form.Group controlId="formStrokesUsed">
+              <Form.Label>Strokes Used</Form.Label>
+              {strokeOptions.map((stroke) => (
+                <Form.Check
+                  key={stroke}
+                  type="checkbox"
+                  label={stroke}
+                  checked={strokesUsed.includes(stroke)}
+                  onChange={() => handleStrokeChange(stroke)}
+                />
+              ))}
+            </Form.Group>
+        
+            <Form.Group controlId="formSwimFeel">
+              <Form.Label>How did you feel after?</Form.Label>
+              <Form.Control
+                as="select"
+                value={swimFeel}
+                onChange={(e) => setSwimFeel(e.target.value)}
+              >
+                <option value="">Select Feeling</option>
+                <option value="Tired">Tired</option>
+                <option value="Energized">Energized</option>
+                <option value="Relaxed">Relaxed</option>
+                <option value="Exhausted">Exhausted</option>
+              </Form.Control>
+            </Form.Group>
+        
+            <Form.Group controlId="formDizzy">
+              <Form.Check
+                type="checkbox"
+                label="Did you feel dizzy?"
+                checked={feltDizzy}
+                onChange={() => setFeltDizzy(!feltDizzy)}
+              />
+            </Form.Group>
+          </>
+        ) :(
           <>
             <Form.Group controlId="formWeight">
               <Form.Label>Weight (lbs)</Form.Label>
