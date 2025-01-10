@@ -22,7 +22,9 @@ const HomePage = () => {
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [error, setError] = useState(null);
+  const [denyModal, setDenyModal] = useState(false);
 
+  
   const splitOptions = {
     'push-pull-legs': ['Push', 'Pull', 'Legs'],
     'upper-lower': ['Upper', 'Lower'],
@@ -32,6 +34,7 @@ const HomePage = () => {
     'push-pull': ['Push', 'Pull'],
     'hybrid': ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Chest', 'Back', 'Shoulders', 'Arms', 'Chest and Triceps', 'Back and Biceps', 'Shoulders and Abs', 'Legs'],
   };
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,8 +108,7 @@ const HomePage = () => {
   };
 
   const handleDenyRecommendation = async () => {
-    await updateProfileRecommendations(nextSplitDay, false);
-    setConfirmModal(false);
+    setDenyModal(true)
   };
 
   const updateProfileRecommendations = async (day, isConfirmed) => {
@@ -123,9 +125,66 @@ const HomePage = () => {
     }
   };
 
+  // If user DOES want to exclude the day
+  const handleExcludeDay = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const profileRef = doc(db, 'profiles', user.uid);
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+          const data = profileSnap.data();
+          const currentExcluded = data.excludedDays || {};
+          currentExcluded[nextSplitDay] = true;
+
+          // Use merge: true or do a partial update so we don’t overwrite entire doc
+          await updateDoc(profileRef, {
+            excludedDays: currentExcluded
+          });
+        }
+      }
+      setDenyModal(false); // close modal
+    } catch (err) {
+      console.error(err);
+      // handle error
+    }
+  };
+
+  // If user DOES NOT want to exclude the day
+  const handleDontExcludeDay = () => {
+    // Just close modal, do nothing
+    setDenyModal(false);
+  };
+
+  function getExerciseDisplay(exercise, workoutType) {
+    if (workoutType === 'Swimming') {
+      let text = `Swimming - ${exercise.swimDistance || 0} meters`;
+      if (exercise.swimFeel) text += ` - ${exercise.swimFeel}`;
+      if (exercise.feltDizzy) text += ` (Dizzy)`;
+      if (exercise.strokesUsed?.length) {
+        text += ` | Strokes: ${exercise.strokesUsed.join(', ')}`;
+      }
+      return text;
+    } else if (workoutType === 'Cardio') {
+      const durationText = exercise.duration ? `${exercise.duration} minutes` : '';
+      const distanceText = exercise.distance ? `${exercise.distance} miles` : '';
+      return `${exercise.exercise} - ${durationText} ${distanceText}`;
+    } else {
+      return `${exercise.exercise} - ${exercise.weight || 0} lbs - ${exercise.sets || 0} sets - ${
+        exercise.reps?.join(', ') || '0'
+      } reps`;
+    }
+  }
+  
+
   const determineNextSplitDay = (lastSplitDay) => {
     if (profile.split && splitOptions[profile.split]) {
-      const splitDays = splitOptions[profile.split].filter(day => day !== 'Cardio');
+      let splitDays = [...splitOptions[profile.split]];
+
+      if (profile.excludedDays) {
+        splitDays = splitDays.filter(day => !profile.excludedDays[day]);
+      }
+
       const currentIndex = splitDays.indexOf(lastSplitDay);
       const nextIndex = (currentIndex + 1) % splitDays.length;
       setNextSplitDay(splitDays[nextIndex]);
@@ -170,30 +229,43 @@ const HomePage = () => {
                 <>
                   <br></br><h3>Last {nextSplitDay} Workout</h3>
                   <Card>
-                    <Card.Body>
-                      {lastNextSplitWorkout.exercises.map((exercise, index) => (
-                        <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
-                          {lastNextSplitWorkout.splitDay === 'Cardio' ? 
-                            `${exercise.exercise} - ${exercise.duration ? `${exercise.duration} minutes` : ''} ${exercise.distance ? `${exercise.distance} miles` : ''}` :
-                            `${exercise.exercise} - ${exercise.weight} lbs - ${exercise.sets} sets - ${exercise.reps.join(', ')} reps`
-                          }
-                        </Badge>
-                      ))}
-                    </Card.Body>
-                  </Card>
+              <Card.Body>
+                {lastNextSplitWorkout.exercises.map((exercise, index) => {
+                  const displayText = getExerciseDisplay(
+                    exercise,
+                    lastNextSplitWorkout.splitDay
+                  );
+                  return (
+                    <Badge
+                      key={index}
+                      pill
+                      bg="info"
+                      style={{ marginRight: '5px', marginTop: '10px' }}
+                    >
+                      {displayText}
+                    </Badge>
+                  );
+                })}
+              </Card.Body>
+            </Card>
                 </>
               )}
               <br></br><h3>Last {lastWorkout.splitDay} Workout</h3>
               <Card>
                 <Card.Body>
-                  {splitDayExercises.map((exercise, index) => (
-                    <Badge key={index} pill bg="info" style={{ marginRight: '5px', marginTop: '10px' }}>
-                      {lastWorkout.splitDay === 'Cardio' ? 
-                        `${exercise.exercise} - ${exercise.duration ? `${exercise.duration} minutes` : ''} ${exercise.distance ? `${exercise.distance} miles` : ''}` :
-                        `${exercise.exercise} - ${exercise.weight} lbs - ${exercise.sets} sets - ${exercise.reps.join(', ')} reps`
-                      }
-                    </Badge>
-                  ))}
+                {splitDayExercises.map((exercise, index) => {
+  const displayText = getExerciseDisplay(exercise, lastWorkout.splitDay);
+  return (
+    <Badge
+      key={index}
+      pill
+      bg="info"
+      style={{ marginRight: '5px', marginTop: '10px' }}
+    >
+      {displayText}
+    </Badge>
+  );
+})}
                 </Card.Body>
               </Card>
             </>
@@ -312,23 +384,44 @@ const HomePage = () => {
             </Modal.Footer>
           </Modal>
 
-          <Modal show={confirmModal} onHide={() => setConfirmModal(false)}>
-            <Modal.Header closeButton>
-              <Modal.Title>Confirm Recommendation</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>Do you agree that today is likely to be a "{nextSplitDay}" day?</Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleDenyRecommendation}>
-                Deny
-              </Button>
-              <Button variant="primary" onClick={handleConfirmRecommendation}>
-                Confirm
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        </>
-      )}
-    </div>
+                {/* Confirm Recommendation Modal */}
+        <Modal show={confirmModal} onHide={() => setConfirmModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Recommendation</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Do you agree that today is likely to be a "{nextSplitDay}" day?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleDenyRecommendation}>
+              Deny
+            </Button>
+            <Button variant="primary" onClick={handleConfirmRecommendation}>
+              Confirm
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Exclusion Prompt Modal (shown on Deny) */}
+        <Modal show={denyModal} onHide={() => setDenyModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Exclude Day?</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Do you want to remove "{nextSplitDay}" from your rotation?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleDontExcludeDay}>
+              No
+            </Button>
+            <Button variant="danger" onClick={handleExcludeDay}>
+              Yes, exclude
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </>
+    )}
+  </div>
   );
 };
 

@@ -17,6 +17,7 @@ const ManageProfile = () => {
   const [musclemass, setMuscleMass] = useState('');
   const [customExercises, setCustomExercises] = useState({});
   const [customSupplements, setCustomSupplements] = useState([]);
+  const [excludedDays, setExcludedDays] = useState({ Cardio: false, Swimming: false });  
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -43,6 +44,7 @@ const ManageProfile = () => {
           setBodyFat(data.bodyFat || '');
           setMuscleMass(data.musclemass || "");
           setCustomExercises(data.customExercises || {});
+          setExcludedDays(data.excludedDays || { Cardio: false, Swimming: false });
           setCustomSupplements(data.customSupplements || []);
         }
       }
@@ -67,9 +69,12 @@ const ManageProfile = () => {
           bmi,
           bodyFat,
           musclemass,
-          customExercises,  // Ensure custom exercises are included
-          customSupplements  // Ensure custom supplements are included
-        });
+          customExercises,  
+          customSupplements,  
+          excludedDays,      
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        }, { merge: true });
 
         // Save weight, BMI, body fat, and muscle mass updates to the metrics sub-collection
         const metricsRef = collection(profileRef, 'metrics');
@@ -208,6 +213,30 @@ const ManageProfile = () => {
             onChange={(e) => setMuscleMass(e.target.value)}
           />
         </Form.Group>
+
+        {/* Example: Excluded Days (checkboxes) */}
+        <Form.Group controlId="formExcludedDays" style={{ marginTop: '20px' }}>
+          <Form.Label>Exclude Days</Form.Label>
+          <div>
+            <Form.Check
+              type="checkbox"
+              label="Exclude Cardio"
+              checked={excludedDays.Cardio}
+              onChange={(e) =>
+                setExcludedDays({ ...excludedDays, Cardio: e.target.checked })
+              }
+            />
+            <Form.Check
+              type="checkbox"
+              label="Exclude Swimming"
+              checked={excludedDays.Swimming}
+              onChange={(e) =>
+                setExcludedDays({ ...excludedDays, Swimming: e.target.checked })
+              }
+            />
+          </div>
+        </Form.Group>
+
         <Button variant="primary" type="submit">
           Save Profile
         </Button>
