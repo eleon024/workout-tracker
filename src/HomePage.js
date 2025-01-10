@@ -192,8 +192,8 @@ const HomePage = () => {
   };
 
   const sortedWorkouts = () => {
-    const sorted = workouts.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
-    return sorted;
+    return [...workouts].sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+
   };
 
   const generateChartData = (label, dataKey) => {
